@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Competency Map</title>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background: #f0f0f0;
+            overflow: hidden;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .node {
+            cursor: pointer;
+        }
+
+        .node circle {
+            stroke: steelblue;
+            stroke-width: 2px;
+        }
+
+        .node text {
+            font: 12px sans-serif;
+            text-anchor: middle;
+            pointer-events: none;
+            fill: #333;
+        }
+
+        .link {
+            fill: none;
+            stroke: #bbb;
+            stroke-opacity: 0.6;
+            stroke-width: 1.5px;
+        }
+
+        .tooltip {
+            position: absolute;
+            text-align: center;
+            width: auto;
+            height: auto;
+            padding: 8px;
+            font: 12px sans-serif;
+            background: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            border-radius: 8px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        #competency-map {
+            width: 100vw;
+            height: 100vh;
+            overflow: auto;
+        }
+
+        svg {
+            display: block;
+        }
+
+        .legend {
+            font-size: 12px;
+        }
+
+        .legend rect {
+            stroke-width: 2;
+            stroke: white;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Competency Mind Map</h1>
+    <div id="competency-map"></div>
+    <div id="tooltip" class="tooltip"></div>
+
+    <script>
+        // Data for the competency map
+        const data = {
+            name: "Competency Areas",
+            children: [
+                {
+                    name: "Foundational Knowledge and Skills",
+                    children: [
+                        {
+                            name: "Pedagogical Expertise",
+                            children: [
+                                {
+                                    name: "Understanding Teaching Methodologies",
+                                    children: [
+                                        {
+                                            name: "Primary Level Teaching Methodologies",
+                                            children: [
+                                                { name: "Play-Based Learning", description: "Engaging children through structured play activities." },
+                                                { name: "Montessori Method", description: "Encouraging independence and hands-on learning." },
+                                                { name: "Storytelling", description: "Using stories to teach morals and concepts." },
+                                                { name: "Activity-Based Learning", description: "Incorporating activities that require physical movement." }
+                                            ]
+                                        },
+                                        {
+                                            name: "Secondary Level Teaching Methodologies",
+                                            children: [
+                                                { name: "Project-Based Learning", description: "Students work on projects over extended periods." },
+                                                { name: "Inquiry-Based Learning", description: "Encouraging questions and exploration." },
+                                                { name: "Flipped Classroom", description: "Students learn new content at home and practice in class." },
+                                                { name: "Collaborative Learning", description: "Group activities and peer-to-peer teaching." }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    name: "Evaluating Effectiveness",
+                                    children: [
+                                        { name: "Formative Assessment", description: "Regular, informal assessments to gauge understanding." },
+                                        { name: "Summative Assessment", description: "Formal evaluations like tests and projects." },
+                                        { name: "Feedback Mechanisms", description: "Providing constructive feedback to improve learning." }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            name: "Learning Theories",
+                            children: [
+                                {
+                                    name: "Primary Level Learning Theories",
+                                    children: [
+                                        { name: "Piaget’s Theory of Cognitive Development", description: "Understanding stages of cognitive growth." },
+                                        { name: "Vygotsky’s Social Development Theory", description: "Importance of social interactions in learning." },
+                                        { name: "Behaviorism", description: "Using reinforcement and punishment to shape behavior." }
+                                    ]
+                                },
+                                {
+                                    name: "Secondary Level Learning Theories",
+                                    children: [
+                                        { name: "Constructivism", description: "Building on prior knowledge through active learning." },
+                                        { name: "Social Learning Theory", description: "Learning through observation and imitation." },
+                                        { name: "Cognitivism", description: "Understanding how information is processed and stored." }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            name: "Application in Teaching",
+                            children: [
+                                { name: "Primary Level Applications", description: "Hands-on activities, social interactions, play." },
+                                { name: "Secondary Level Applications", description: "Problem-solving tasks, collaborative projects, self-directed learning." }
+                            ]
+                        },
+                        {
+                            name: "Instructional Strategies",
+                            children: [
+                                {
+                                    name: "Primary Level Instructional Strategies",
+                                    children: [
+                                        { name: "Differentiated Instruction", description: "Tailoring lessons to different learning styles." },
+                                        { name: "Scaffolding", description: "Providing support structures for learning." },
+                                        { name: "Visual Aids", description: "Using pictures, charts, and videos to enhance understanding." }
+                                    ]
+                                },
+                                {
+                                    name: "Secondary Level Instructional Strategies",
+                                    children: [
+                                        { name: "Socratic Method", description: "Using questions to stimulate critical thinking." },
+                                        { name: "Case Studies", description: "Applying concepts to real-world scenarios." },
+                                        { name: "Technology Integration", description: "Using digital tools and resources." }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            name: "Engagement Techniques",
+                            children: [
+                                { name: "Primary Level", description: "Interactive read-alouds, educational games, hands-on experiments." },
+                                { name: "Secondary Level", description: "Debates, role-playing, flipped classroom discussions." }
+                            ]
+                        },
+                        {
+                            name: "Communication Skills",
+                            children: [
+                                { name: "Verbal Communication", description: "Simple language, clear instructions, repetitive reinforcement." },
+                                { name: "Non-Verbal Communication", description: "Body language, facial expressions, visual cues." },
+                                { name: "Listening Skills", description: "Active listening, responding to cues, empathetic listening." },
+                                { name: "Writing Skills", description: "Writing prompts, guided writing exercises." },
+                                { name: "Modeling Effective Communication", description: "Demonstrating clear and respectful communication." }
+                            ]
+                        },
+                        {
+                            name: "Subject Matter Knowledge",
+                            children: [
+                                {
+                                    name: "Mastery of Subject Content",
+                                    children: [
+                                        { name: "Primary Level Mastery", description: "Basic arithmetic, patterns, shapes." },
+                                        { name: "Secondary Level Mastery", description: "Algebra, geometry, data analysis." },
+                                        { name: "Staying Current", description: "Continuous professional development and staying updated." }
+                                    ]
+                                },
+                                {
+                                    name: "Real-World Applications",
+                                    children: [
+                                        { name: "Primary Level Applications", description: "Using money, measuring ingredients." },
+                                        { name: "Secondary Level Applications", description: "Real-world problem solving, statistics in daily life." }
+                                    ]
+                                },
+                                {
+                                    name: "Curriculum Framework",
+                                    children: [
+                                        {
+                                            name: "Primary Level Framework",
+                                            description: "Goals: Basic literacy and numeracy, social skills development. Objectives: Mastery of foundational skills. Assessment Practices: Observations, informal assessments."
+                                        },
+                                        {
+                                            name: "Secondary Level Framework",
+                                            description: "Goals: Advanced knowledge, critical thinking, readiness for higher education. Objectives: Mastery of advanced skills and content. Assessment Practices: Formal tests, projects, standardized assessments."
+                                        }
+                                    ]
+                                },
+                                {
+                                    name: "Educational Trends and Policies",
+                                    children: [
+                                        {
+                                            name: "Staying Informed",
+                                            description: "Primary Level: Focus on early childhood education trends, developmentally appropriate practices. Secondary Level: STEM education, integration of technology, career readiness."
+                                        },
+                                        {
+                                            name: "Implications of Policy Changes",
+                                            description: "Primary Level: Adjusting to new standards in early education. Secondary Level: Implementing changes in high school curricula, standardized testing."
+                                        },
+                                        {
+                                            name: "Implementing Curriculum Changes",
+                                            description: "Primary Level: Adapting lesson plans to new frameworks. Secondary Level: Aligning teaching practices with updated standards."
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            name: "Classroom Management",
+                            children: [
+                                {
+                                    name: "Creating a Safe and Inclusive Environment",
+                                    children: [
+                                        {
+                                            name: "Primary Level Safety",
+                                            children: [
+                                                { name: "Physical Safety", description: "Childproofing the classroom, ensuring safe play areas." },
+                                                { name: "Emotional Safety", description: "Encouraging sharing and expression, fostering kindness." }
+                                            ]
+                                        },
+                                        {
+                                            name: "Secondary Level Safety",
+                                            children: [
+                                                { name: "Physical Safety", description: "Laboratory safety, safe use of equipment." },
+                                                { name: "Emotional Safety", description: "Addressing bullying, promoting mental health." }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    name: "Promoting Respect for Diversity",
+                                    children: [
+                                        { name: "Primary Level", description: "Celebrating different cultures, inclusive activities." },
+                                        { name: "Secondary Level", description: "Discussions on diversity, inclusive curricula." }
+                                    ]
+                                },
+                                {
+                                    name: "Developing Rules and Procedures",
+                                    children: [
+                                        {
+                                            name: "Primary Level Rules",
+                                            children: [
+                                                { name: "Classroom Rules", description: "Simple, clear rules; visual aids." },
+                                                { name: "Procedures", description: "Routine activities, transition cues." }
+                                            ]
+                                        },
+                                        {
+                                            name: "Secondary Level Rules",
+                                            children: [
+                                                { name: "Classroom Rules", description: "Detailed expectations, student input." },
+                                                { name: "Procedures", description: "Structured routines, clear guidelines." }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    name: "Communicating Expectations",
+                                    children: [
+                                        { name: "Primary Level", description: "Visual aids, regular reminders." },
+                                        { name: "Secondary Level", description: "Syllabi, class contracts." }
+                                    ]
+                                },
+                                {
+                                    name: "Proactive Strategies",
+                                    children: [
+                                        { name: "Primary Level", description: "Positive reinforcement, engaging activities." },
+                                        { name: "Secondary Level", description: "Preventative measures, conflict resolution training." }
+                                    ]
+                                },
+                                {
+                                    name: "Building Positive Relationships",
+                                    children: [
+                                        {
+                                            name: "Primary Level Relationships",
+                                            children: [
+                                                { name: "Teacher-Student", description: "Personal connections, empathy." },
+                                                { name: "Student-Student", description: "Cooperative games, group work." }
+                                            ]
+                                        },
+                                        {
+                                            name: "Secondary Level Relationships",
+                                            children: [
+                                                { name: "Teacher-Student", description: "Mentoring, open communication." },
+                                                { name: "Student-Student", description: "Collaborative projects, peer support." }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    name: "Positive Classroom Climate",
+                                    children: [
+                                        { name: "Primary Level", description: "Reward systems, class meetings." },
+                                        { name: "Secondary Level", description: "Respectful discourse, inclusive policies." }
+                                    ]
+                                },
+                                {
+                                    name: "Maximizing Classroom Interaction",
+                                    children: [
+                                        {
+                                            name: "Primary Level Interaction",
+                                            children: [
+                                                { name: "Physical Organization", description: "Activity centers, flexible seating." },
+                                                { name: "Instructional Strategies", description: "Group activities, interactive lessons." }
+                                            ]
+                                        },
+                                        {
+                                            name: "Secondary Level Interaction",
+                                            children: [
+                                                { name: "Physical Organization", description: "Collaborative workspaces, technology integration." },
+                                                { name: "Instructional Strategies", description: "Socratic seminars, team projects." }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    name: "Using Technology",
+                                    children: [
+                                        { name: "Primary Level", description: "Interactive whiteboards, educational apps." },
+                                        { name: "Secondary Level", description: "Online discussion boards, digital collaboration tools." }
+                                    ]
+                                },
+                                {
+                                    name: "Addressing Behavioral Issues",
+                                    children: [
+                                        {
+                                            name: "Primary Level Issues",
+                                            children: [
+                                                { name: "Common Issues", description: "Distraction, minor conflicts." },
+                                                { name: "Strategies", description: "Time-outs, positive reinforcement." }
+                                            ]
+                                        },
+                                        {
+                                            name: "Secondary Level Issues",
+                                            children: [
+                                                { name: "Common Issues", description: "Disrespect, absenteeism." },
+                                                { name: "Strategies", description: "Restorative practices, behavior contracts." }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    name: "Consistent and Fair Responses",
+                                    children: [
+                                        { name: "Primary Level", description: "Clear consequences, consistency." },
+                                        { name: "Secondary Level", description: "Fair policies, individualized approaches." }
+                                    ]
+                                },
+                                {
+                                    name: "Behavior Reduction Strategies",
+                                    children: [
+                                        { name: "Primary Level", description: "Incentive programs, behavior charts." },
+                                        { name: "Secondary Level", description: "Counseling, behavior intervention plans." }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            name: "Organizational Communication and Collaboration",
+                            children: [
+                                {
+                                    name: "Organizational Communication",
+                                    children: [
+                                        { name: "Digital Technologies", description: "Primary Level: Parent-teacher communication apps, classroom blogs. Secondary Level: Email, school management systems." },
+                                        { name: "Effective Communication Strategies", description: "Primary Level: Regular newsletters, parent meetings. Secondary Level: Progress reports, parent-teacher conferences." }
+                                    ]
+                                },
+                                {
+                                    name: "Professional Collaboration",
+                                    children: [
+                                        { name: "Collaborating with Colleagues", description: "Primary Level: Grade-level meetings, shared resources. Secondary Level: Departmental meetings, professional learning communities." },
+                                        { name: "Collaborative Planning", description: "Primary Level: Joint lesson planning, curriculum alignment. Secondary Level: Interdisciplinary projects, team teaching." },
+                                        { name: "Sharing Resources and Expertise", description: "Primary Level: Resource libraries, peer observations. Secondary Level: Workshops, mentoring programs." }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            name: "Reflective Practice and Continuous Professional Development",
+                            children: [
+                                {
+                                    name: "Reflective Practice",
+                                    children: [
+                                        { name: "Ongoing Reflection", description: "Primary Level: Teaching journals, self-assessment. Secondary Level: Peer reviews, student feedback." },
+                                        { name: "Utilizing Feedback", description: "Primary Level: Feedback from colleagues, classroom observations. Secondary Level: Formal evaluations, student surveys." },
+                                        { name: "Reflective Tools", description: "Primary Level: Reflective journals, peer discussions. Secondary Level: Action research, professional portfolios." }
+                                    ]
+                                },
+                                {
+                                    name: "Continuous Professional Development",
+                                    children: [
+                                        { name: "Identifying Areas for Growth", description: "Primary Level: Workshops on early childhood education, developmental psychology. Secondary Level: Advanced subject-specific courses, educational technology." },
+                                        { name: "Professional Development Activities", description: "Primary Level: Seminars, conferences, online courses. Secondary Level: Professional learning networks, certifications." },
+                                        { name: "Digital Resources", description: "Primary Level: Educational websites, online courses. Secondary Level: Webinars, academic journals." },
+                                        { name: "Creating a Professional Development Plan", description: "SMART Goals: Specific, Measurable, Attainable, Realistic, Time frame goals." },
+                                        { name: "Experimenting with New Methodologies", description: "Primary Level: Trying new teaching strategies, incorporating new technologies. Secondary Level: Implementing research-based practices, piloting new programs." }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: "Advanced Skills and Dispositions",
+                    children: [
+                        {
+                            name: "Assessment and Evaluation",
+                            children: [
+                                {
+                                    name: "Designing Assessments",
+                                    children: [
+                                        { name: "Primary Level Assessment Design", description: "Types of Assessments: Observations, checklists, performance tasks. Digital Tools: Interactive quizzes, e-portfolios. Parameters: Reliability, validity, standardization, practicality." },
+                                        { name: "Secondary Level Assessment Design", description: "Types of Assessments: Essays, projects, standardized tests. Digital Tools: Online assessments, data analytics. Parameters: Reliability, validity, standardization, practicality." }
+                                    ]
+                                },
+                                {
+                                    name: "Analyzing Assessment Data",
+                                    children: [
+                                        { name: "Primary Level Data Analysis", description: "Techniques: Tracking progress, identifying learning gaps. Feedback: Timely, constructive feedback to students." },
+                                        { name: "Secondary Level Data Analysis", description: "Techniques: Statistical analysis, trend identification. Feedback: Detailed, actionable feedback to guide improvement." }
+                                    ]
+                                },
+                                {
+                                    name: "Using Assessment Results",
+                                    children: [
+                                        { name: "Primary Level Application", description: "Differentiating Instruction: Tailoring lessons based on assessment data. Personalizing Learning: Creating individualized learning plans." },
+                                        { name: "Secondary Level Application", description: "Monitoring Progress: Regularly assessing student performance. Adjusting Strategies: Modifying teaching methods based on results." },
+                                        { name: "Student Involvement", description: "Primary Level: Encouraging self-assessment and reflection. Secondary Level: Involving students in goal-setting and self-evaluation." }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            name: "Critical Thinking and Problem-Solving",
+                            children: [
+                                {
+                                    name: "Analyzing Complex Situations",
+                                    children: [
+                                        { name: "Primary Level Analysis", description: "Identifying Challenges: Simple problem identification, basic solutions. Creative Solutions: Encouraging imaginative thinking." },
+                                        { name: "Secondary Level Analysis", description: "Identifying Challenges: Complex problem identification, multifaceted solutions. Effective Solutions: Developing and implementing strategic solutions." }
+                                    ]
+                                },
+                                {
+                                    name: "Encouraging Critical Thinking",
+                                    children: [
+                                        { name: "Primary Level Promotion", description: "Techniques: Puzzles, simple experiments, questioning. Activities: Role-playing, group discussions." },
+                                        { name: "Secondary Level Promotion", description: "Techniques: Debates, research projects, case studies. Activities: Critical analysis, problem-solving tasks." }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            name: "Creativity and Innovation",
+                            children: [
+                                {
+                                    name: "Innovative Teaching Methods",
+                                    children: [
+                                        { name: "Primary Level Innovation", description: "Methods: Creative arts, hands-on projects, storytelling. Activities: Building models, drawing, imaginative play." },
+                                        { name: "Secondary Level Innovation", description: "Methods: Technology integration, project-based learning. Activities: Designing experiments, creating multimedia presentations." }
+                                    ]
+                                },
+                                {
+                                    name: "Embracing Technology",
+                                    children: [
+                                        { name: "Primary Level Technology", description: "Tools: Tablets, educational apps, interactive whiteboards. Integration: Blended learning, virtual field trips." },
+                                        { name: "Secondary Level Technology", description: "Tools: Laptops, online learning platforms, simulation software. Integration: Flipped classrooms, digital research." }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            name: "Collaboration and Teamwork",
+                            children: [
+                                {
+                                    name: "Working with Colleagues",
+                                    children: [
+                                        { name: "Primary Level Collaboration", description: "Methods: Grade-level teams, shared resources. Activities: Joint lesson planning, collaborative teaching." },
+                                        { name: "Secondary Level Collaboration", description: "Methods: Departmental teams, cross-curricular projects. Activities: Professional learning communities, co-teaching." }
+                                    ]
+                                },
+                                {
+                                    name: "Building Partnerships",
+                                    children: [
+                                        { name: "Primary Level Partnerships", description: "With Families: Regular communication, involvement in school activities. With Community: Field trips, guest speakers." },
+                                        { name: "Secondary Level Partnerships", description: "With Families: Parent-teacher conferences, newsletters. With Community: Internships, community service projects." }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            name: "Leadership and Advocacy",
+                            children: [
+                                {
+                                    name: "Demonstrating Leadership",
+                                    children: [
+                                        { name: "Primary Level Leadership", description: "Roles: Grade-level leader, committee member. Activities: Leading projects, mentoring peers." },
+                                        { name: "Secondary Level Leadership", description: "Roles: Department head, club advisor. Activities: Organizing events, leading professional development." }
+                                    ]
+                                },
+                                {
+                                    name: "Advocating for Students",
+                                    children: [
+                                        { name: "Primary Level Advocacy", description: "Focus: Supporting individual needs, promoting inclusivity. Activities: Working with support staff, implementing IEPs." },
+                                        { name: "Secondary Level Advocacy", description: "Focus: Ensuring equity, addressing systemic issues. Activities: Policy advocacy, student representation." }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: "Essential Attributes and Values",
+                    children: [
+                        {
+                            name: "Personal Competencies (Soft Skills)",
+                            children: [
+                                { name: "Humility, Respect, and Empathy", description: "Primary Level: Demonstrating kindness, understanding developmental stages. Secondary Level: Showing respect for diverse opinions, empathetic listening." },
+                                { name: "Interaction", description: "Primary Level: Encouraging positive interactions, modeling respectful behavior. Secondary Level: Facilitating open communication, fostering a collaborative environment." },
+                                { name: "Understanding and Motivation", description: "Primary Level: Creating an engaging learning atmosphere, using positive reinforcement. Secondary Level: Inspiring students, setting high expectations." },
+                                { name: "Leadership", description: "Primary Level: Guiding students, demonstrating responsibility. Secondary Level: Leading by example, encouraging student leadership." },
+                                { name: "Planning and Organizing", description: "Primary Level: Organizing activities, maintaining classroom routines. Secondary Level: Planning curriculum, managing time effectively." },
+                                { name: "Problem-Solving", description: "Primary Level: Simple problem-solving activities, encouraging creativity. Secondary Level: Complex problem-solving tasks, fostering critical thinking." },
+                                { name: "Resilience", description: "Primary Level: Encouraging perseverance, modeling positive attitudes. Secondary Level: Handling challenges, maintaining focus on goals." },
+                                { name: "Self-Evaluation", description: "Primary Level: Reflecting on teaching practices, seeking feedback. Secondary Level: Continuous improvement, using data to inform practices." },
+                                { name: "Adaptability", description: "Primary Level: Flexibility in lesson plans, adapting to student needs. Secondary Level: Adjusting teaching strategies, embracing new technologies." }
+                            ]
+                        },
+                        {
+                            name: "Reflective Practice and Lifelong Learning",
+                            children: [
+                                { name: "Ongoing Reflection", description: "Primary Level: Daily reflection, simple feedback mechanisms. Secondary Level: In-depth reflection, structured feedback systems." },
+                                { name: "Commitment to Learning", description: "Primary Level: Engaging in professional development, staying updated on best practices. Secondary Level: Pursuing advanced education, participating in professional networks." }
+                            ]
+                        },
+                        {
+                            name: "Cultural Competency and Responsiveness",
+                            children: [
+                                { name: "Valuing Diversity", description: "Primary Level: Celebrating cultural differences, inclusive activities. Secondary Level: Integrating diverse perspectives, promoting cultural awareness." },
+                                { name: "Adapting Practices", description: "Primary Level: Using culturally relevant materials, adapting teaching methods. Secondary Level: Differentiating instruction, addressing diverse needs." }
+                            ]
+                        },
+                        {
+                            name: "Ethical Conduct and Professionalism",
+                            children: [
+                                { name: "Demonstrating Integrity", description: "Primary Level: Modeling ethical behavior, teaching values. Secondary Level: Upholding professional standards, fostering trust." },
+                                { name: "Confidentiality and Responsiveness", description: "Primary Level: Respecting student privacy, responding to ethical issues. Secondary Level: Maintaining confidentiality, addressing ethical dilemmas." },
+                                { name: "Professionalism", description: "Primary Level: Punctuality, appropriate communication. Secondary Level: Professional conduct, collaboration with colleagues." }
+                            ]
+                        },
+                        {
+                            name: "Resilience and Well-being",
+                            children: [
+                                { name: "Managing Stress", description: "Primary Level: Simple stress management techniques, balanced workload. Secondary Level: Advanced stress management strategies, maintaining work-life balance." },
+                                { name: "Fostering Well-being", description: "Primary Level: Promoting healthy habits, creating a positive environment. Secondary Level: Supporting mental health, seeking professional help when needed." },
+                                { name: "Positive Outlook", description: "Primary Level: Encouraging optimism, maintaining a positive classroom climate. Secondary Level: Fostering resilience, promoting a growth mindset." }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: "Specialized Competency Areas",
+                    children: [
+                        {
+                            name: "Inclusive Education",
+                            children: [
+                                { name: "Supporting Diverse Learners", description: "Primary Level: Addressing learning disabilities, providing support for gifted students. Secondary Level: Implementing IEPs, collaborating with specialists." },
+                                { name: "Creating Inclusive Lesson Plans", description: "Primary Level: Designing accessible activities, using differentiated instruction. Secondary Level: Integrating inclusive practices, accommodating diverse needs." },
+                                { name: "Peer Instruction and Differentiation", description: "Primary Level: Encouraging peer support, using varied instructional methods. Secondary Level: Facilitating peer learning, differentiating content." },
+                                { name: "Diverse Assessment Strategies", description: "Primary Level: Using multiple assessment methods, considering individual needs. Secondary Level: Applying diverse assessment tools, personalizing evaluations." }
+                            ]
+                        },
+                        {
+                            name: "Digital Literacy and Competency",
+                            children: [
+                                { name: "Proficiency in Digital Technologies", description: "Primary Level: Basic use of educational apps, interactive tools. Secondary Level: Advanced digital tools, data analysis software." },
+                                { name: "Staying Current with EdTech", description: "Primary Level: Following trends, attending workshops. Secondary Level: Researching innovations, integrating new technologies." },
+                                { name: "Technology-Enabled Activities", description: "Primary Level: Interactive lessons, virtual field trips. Secondary Level: Online projects, digital collaboration." },
+                                { name: "Digital Competency", description: "Primary Level: Basic digital literacy, using technology for research. Secondary Level: Advanced digital skills, managing digital resources." }
+                            ]
+                        },
+                        {
+                            name: "Global Citizenship Education",
+                            children: [
+                                { name: "Understanding Global Issues", description: "Primary Level: Simple global concepts, cultural awareness. Secondary Level: Complex global issues, intercultural understanding." },
+                                { name: "Developing Skills for Responsible Global Citizenship", description: "Primary Level: Encouraging empathy, simple problem-solving. Secondary Level: Promoting critical thinking, addressing global challenges." }
+                            ]
+                        },
+                        {
+                            name: "Age-Specific Pedagogy",
+                            children: [
+                                { name: "Early Childhood Education", description: "Developmental Characteristics: Cognitive, emotional, social development stages. Teaching Practices: Play-based learning, sensory activities." },
+                                { name: "Primary Education", description: "Developmental Needs: Cognitive, emotional, social growth. Instructional Strategies: Interactive lessons, hands-on activities." },
+                                { name: "Secondary Education", description: "Adolescent Development: Cognitive, emotional, social changes. Instructional Strategies: Collaborative projects, advanced critical thinking tasks." }
+                            ]
+                        },
+                        {
+                            name: "Content-Specific Pedagogy",
+                            children: [
+                                { name: "Teaching Specific Subjects", description: "Math: Problem-solving, real-world applications. Science: Inquiry-based learning, experiments. Language Arts: Critical reading, creative writing. Social Studies: Historical analysis, cultural studies. Other Disciplines: Tailoring instruction to specific subject needs." }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: "Additional Competencies",
+                    children: [
+                        {
+                            name: "Learning Environment Creation Competency",
+                            children: [
+                                { name: "Maximizing Classroom Interaction", description: "Primary Level: Flexible seating, group activities. Secondary Level: Collaborative workspaces, interactive lessons." },
+                                { name: "Challenging Tasks and Experiential Learning", description: "Primary Level: Hands-on activities, simple experiments. Secondary Level: Real-world projects, advanced experiments." },
+                                { name: "Promoting Curiosity and Engagement", description: "Primary Level: Interactive read-alouds, educational games. Secondary Level: Debates, role-playing." }
+                            ]
+                        },
+                        {
+                            name: "Gender Sensitivity",
+                            children: [
+                                { name: "Promoting Gender Equality", description: "Classroom Culture: Respecting all genders, using gender-neutral language. Addressing Stereotypes: Challenging gender biases, fostering inclusivity." },
+                                { name: "Discussing Sensitive Topics", description: "Age-Appropriate Discussions: Addressing gender and sexuality sensitively. Creating Safe Spaces: Encouraging open conversations, ensuring confidentiality." },
+                                { name: "Gender Sensitivity Knowledge and Skills", description: "Theoretical Knowledge: Understanding gender issues. Practical Skills: Implementing gender-sensitive practices." }
+                            ]
+                        },
+                        {
+                            name: "Ethics Sensitivity",
+                            children: [
+                                { name: "Developing Positivity and Empathy", description: "Primary Level: Simple ethical scenarios, empathetic responses. Secondary Level: Complex ethical dilemmas, promoting empathy." },
+                                { name: "Awareness and Diversity", description: "Identifying Diversity: Recognizing different backgrounds and needs. Responding to Diversity: Adapting practices to be inclusive." },
+                                { name: "Emotional Quotient Follow-up", description: "Primary Level: Monitoring emotional well-being, providing support. Secondary Level: Addressing emotional challenges, promoting resilience." },
+                                { name: "Ethical Perception", description: "Primary Level: Teaching basic ethics, modeling ethical behavior. Secondary Level: Promoting ethical thinking, addressing dilemmas." }
+                            ]
+                        },
+                        {
+                            name: "Research Competency",
+                            children: [
+                                { name: "Research Methodology", description: "Understanding Methods: Qualitative and quantitative research. Conducting Research: Applying research techniques in education." },
+                                { name: "ICT and Research", description: "Using Technology: Accessing online databases, digital tools for research. Evaluating Resources: Assessing the credibility of online information." },
+                                { name: "Promoting Research-Oriented Learning", description: "Encouraging Projects: Engaging students in research projects. Integrating Findings: Using research to inform teaching practices." },
+                                { name: "Importance of Research", description: "Understanding Significance: Recognizing the value of research in education. Connecting Research and Practice: Applying research findings to improve teaching." }
+                            ]
+                        },
+                        {
+                            name: "Professionalism",
+                            children: [
+                                { name: "Professional Conduct", description: "Ethical Standards: Adhering to professional codes of conduct. Respect: Treating all stakeholders with respect and integrity." },
+                                { name: "Professional Development", description: "Continuous Learning: Engaging in ongoing professional development. Sharing Knowledge: Collaborating and sharing expertise with colleagues." },
+                                { name: "Advocacy", description: "Supporting Students: Advocating for student needs and rights. Promoting Education: Supporting policies and practices that benefit education." }
+                            ]
+                        },
+                        {
+                            name: "Teacher Identity and Well-being",
+                            children: [
+                                { name: "Professional Identity", description: "Understanding Role: Recognizing the role of teachers as facilitators of learning. Developing Identity: Building a strong professional identity." },
+                                { name: "Emotional Intelligence", description: "Self-Awareness: Recognizing and managing personal emotions. Empathy: Understanding and responding to the emotions of others." },
+                                { name: "Burnout Prevention", description: "Stress Management: Developing strategies to manage stress. Work-Life Balance: Maintaining a healthy balance between work and personal life." }
+                            ]
+                        },
+                        {
+                            name: "Technology Integration",
+                            children: [
+                                { name: "Planning for Technology Integration", description: "Selecting Tools: Choosing appropriate digital tools for instruction. Aligning with Objectives: Ensuring technology use aligns with learning goals." },
+                                { name: "Implementing Technology Effectively", description: "Modeling Use: Demonstrating effective use of technology. Developing Skills: Providing students with opportunities to develop digital literacy." },
+                                { name: "Digital Citizenship", description: "Ethical Use: Promoting responsible use of digital tools. Safety and Privacy: Addressing issues of digital safety and privacy." }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: "Inclusive Measures",
+                    children: [
+                        {
+                            name: "Embracing and Appreciating Diversity",
+                            children: [
+                                { name: "Diverse Learning Abilities", description: "Lesson Plans: Incorporating activities that support diverse learning abilities. Participatory Learning: Providing opportunities for all students to engage." },
+                                { name: "Conceptual Understanding", description: "Flow Charts and Concept Maps: Creating visual aids for understanding concepts. Shared Planning and Teaching: Engaging students in planning and teaching." },
+                                { name: "Peer-to-Peer Instruction", description: "Encouraging Support: Promoting peer instruction and leadership. Innovative Activities: Planning creative activities for differentiated learners." },
+                                { name: "Diverse Assessment Strategies", description: "Inclusive Assessments: Using varied modes of assessment with proficiency. Support Outside Classroom: Encouraging students to seek support outside the classroom." }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: "Gender Sensitivity",
+                    children: [
+                        {
+                            name: "Gender Sensitivity Awareness",
+                            children: [
+                                { name: "Relevant Knowledge and Skills", description: "Understanding Issues: Being sensitive to gender issues through relevant knowledge. Theoretical and Practical Skills: Implementing gender-sensitive practices." },
+                                { name: "Child Rights Awareness", description: "Knowing Rights: Being aware of child rights and promoting them." },
+                                { name: "Classroom Atmosphere", description: "Promoting Equality: Creating an atmosphere of gender equality." },
+                                { name: "Activity Planning", description: "Considering Gender: Planning activities with gender sensitivity in mind." },
+                                { name: "Raising Awareness", description: "Addressing Issues: Encouraging activities that address gender issues. Discussing Sensitively: Handling sensitive discussions with care." },
+                                { name: "Broad-Minded Approach", description: "Encouraging Open-Mindedness: Promoting a broad-minded and balanced approach." },
+                                { name: "Quizzes and Role Plays", description: "Creating Activities: Designing quizzes and role plays to gauge gender sensitivity." },
+                                { name: "Current Affairs Discussion", description: "Engaging Students: Discussing current affairs related to gender issues." },
+                                { name: "Values of Gender Equality", description: "Teaching Values: Using activities to teach the values of gender equality and acceptance." }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: "Ethics Sensitivity",
+                    children: [
+                        {
+                            name: "Developing Positivity and Empathy",
+                            children: [
+                                { name: "Knowledge of Child Psychology", description: "Understanding Development: Knowledge of child development and psychology. Awareness and Diversity: Identifying diversity and addressing it." },
+                                { name: "One-on-One Interaction", description: "Engaging Students: Understanding their sensitivity regarding ethics." },
+                                { name: "Emotional Quotient Follow-up", description: "Monitoring Well-being: Regular follow-ups on emotional health." }
+                            ]
+                        },
+                        {
+                            name: "Ethical Perception",
+                            children: [
+                                { name: "Promoting Awareness", description: "Enhancing awareness of ethical sensitivity." },
+                                { name: "Responding to Vulnerable Students", description: "Providing Support: Addressing the needs of vulnerable students." },
+                                { name: "Confidentiality Respect", description: "Maintaining Privacy: Keeping student issues confidential." },
+                                { name: "Everyday Wisdom", description: "Promoting Ethics: Encouraging ethical sensitivity as everyday wisdom." },
+                                { name: "Bias Prevention", description: "Ensuring Fairness: Preventing any kind of bias." },
+                                { name: "Open-Ended Discussions", description: "Encouraging Dialogue: Organizing discussions on ethical sensitivity." },
+                                { name: "Ethical Emissaries", description: "Creating Teams: Forming teams of students to act as ethical emissaries." }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: "Pedagogical Competency",
+                    children: [
+                        {
+                            name: "Pedagogical Understanding",
+                            children: [
+                                { name: "Purpose and Philosophy", description: "Educational Goals: Understanding the purpose and philosophy of pedagogy." },
+                                { name: "Quality of Teaching", description: "Maintaining Standards: Ensuring high-quality teaching." },
+                                { name: "Current Knowledge", description: "Staying Updated: Keeping current with subject knowledge." },
+                                { name: "Student-Learning Issues", description: "Addressing Challenges: Understanding and addressing learning issues." },
+                                { name: "Research-Based Teaching", description: "Applying Research: Using research to inform teaching practices." },
+                                { name: "Practical Connection", description: "Linking Theory and Practice: Connecting theoretical knowledge to practical applications." },
+                                { name: "Set Rules and Targets", description: "Achieving Goals: Working under set rules to achieve educational targets." },
+                                { name: "Pedagogical Discourse", description: "Participating in Discussions: Engaging in pedagogical discourse." },
+                                { name: "Participatory Learning Activities", description: "Creating Activities: Designing participatory learning tasks." },
+                                { name: "Personalized Learning", description: "Tailoring Instruction: Developing personalized learning plans." },
+                                { name: "Collaborative Learning Environment", description: "Fostering Collaboration: Creating a collaborative learning environment." },
+                                { name: "Creativity and Innovation", description: "Encouraging Innovation: Exposing students to creative approaches." },
+                                { name: "Relevant Activities", description: "Designing Lessons: Creating activities that are relevant to students." }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: "Assessment Strategies",
+                    children: [
+                        {
+                            name: "Appropriate Tools and Indicators",
+                            children: [
+                                { name: "Clarity about Learning Outcomes", description: "Understanding Goals: Knowing the intended learning outcomes." },
+                                { name: "Good Assessment Strategy", description: "Parameters: Reliability, validity, standardization, practicality." },
+                                { name: "Assessment Types", description: "Differentiating Assessments: Knowing the difference between assessment for, of, and as learning." },
+                                { name: "Learning Outcomes Connection", description: "Aligning Assessments: Connecting assessments with learning outcomes." },
+                                { name: "Assessment Tools", description: "Using Tools: Knowledge of various assessment tools." },
+                                { name: "Assessment Application", description: "Measuring Competency: Applying strategies to measure student competency." },
+                                { name: "Correlation Maintenance", description: "Ensuring Consistency: Maintaining a correlation among teaching, learning, and assessment." },
+                                { name: "Assessment Modules Design", description: "Creating Programs: Designing assessment modules aligned with learning outcomes." },
+                                { name: "Evidence of Learning", description: "Providing Proof: Creating assessments that provide evidence of learning." },
+                                { name: "Varied Assessment Tools", description: "Using Diverse Methods: Applying varied tools to improve learning outcomes." },
+                                { name: "Real-Life Assessment Strategies", description: "Practical Assessments: Using hands-on strategies connected to real-life situations." },
+                                { name: "Concrete Feedback", description: "Providing Feedback: Giving concrete and timely feedback to students." },
+                                { name: "Self and Peer Evaluation", description: "Encouraging Evaluation: Using self and peer evaluation as assessment tools." }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: "Behavioral/Critical Thinking/Adaptability",
+                    children: [
+                        {
+                            name: "Critical Thinking and Problem-Solving",
+                            children: [
+                                { name: "Modeling Behavior", description: "Demonstrating Best Practices: Acting as a role model for students." },
+                                { name: "Critical Thinking Nurture", description: "Encouraging Analysis: Promoting critical thinking in all situations." },
+                                { name: "Behavior Analysis", description: "Reflecting on Interactions: Analyzing behavior and reflecting on it." },
+                                { name: "Adaptability", description: "Responding to Change: Adapting to situations and responding appropriately." },
+                                { name: "Role Clarity", description: "Understanding Responsibilities: Knowing the role of a teacher." },
+                                { name: "Leading by Example", description: "Setting Standards: Leading students by example." },
+                                { name: "Flexible Thinking", description: "Encouraging Adaptability: Promoting flexible thinking in learning." },
+                                { name: "Situational Adaptability", description: "Handling Change: Helping students adapt to different situations." },
+                                { name: "Behavior Management", description: "Teaching Life Skills: Managing student behavior through life skills." },
+                                { name: "Interpersonal Relations", description: "Building Connections: Helping students build interpersonal relations." },
+                                { name: "Congenial Classroom Environment", description: "Creating Ambiance: Fostering a congenial classroom environment." },
+                                { name: "Cluster Groups", description: "Forming Groups: Creating cluster groups to manage behavior." },
+                                { name: "Critical Situations Handling", description: "Problem-Solving Tasks: Creating critical situations for students to handle." },
+                                { name: "Responsibility Delegation", description: "Avoiding Delegation: Encouraging direct responsibility." },
+                                { name: "Group Performance Incentives", description: "Team Building: Providing incentives for group performance." }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: "Promotion of Constitutional Values",
+                    children: [
+                        {
+                            name: "Awareness and Application",
+                            children: [
+                                { name: "Respect for Constitutional Values", description: "Promoting Awareness: Cultivating respect for constitutional values." },
+                                { name: "Respect for Each Other", description: "Encouraging Respect: Fostering mutual respect among students." },
+                                { name: "Accountability and Responsiveness", description: "Ensuring Responsibility: Promoting accountability and responsiveness." },
+                                { name: "Community Participation", description: "Encouraging Engagement: Promoting community participation." },
+                                { name: "Fairness and Objectivity", description: "Ensuring Fairness: Maintaining objectivity and fairness." },
+                                { name: "Current Topics Discussion", description: "Engaging Discussions: Discussing current topics with students." },
+                                { name: "Support for Integrity", description: "Promoting Integrity: Strengthening mechanisms supporting integrity." }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: "Stakeholders' Satisfaction",
+                    children: [
+                        {
+                            name: "Engagement and Responsiveness",
+                            children: [
+                                { name: "Understanding Stakeholders' Needs", description: "Identifying Needs: Knowing the needs of all stakeholders." },
+                                { name: "Rights Awareness", description: "Understanding Rights: Knowing the rights of stakeholders." },
+                                { name: "Engagement Importance", description: "Maintaining Engagement: Keeping stakeholders engaged." },
+                                { name: "Meeting Stakeholders' Needs", description: "Addressing Needs: Working towards meeting the needs of stakeholders." },
+                                { name: "Collaboration", description: "Working Together: Collaborating with stakeholders." },
+                                { name: "Creating Satisfaction", description: "Ensuring Satisfaction: Creating satisfied stakeholders." },
+                                { name: "Two-Way Communication", description: "Maintaining Communication: Establishing channels of two-way communication." }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: "Conduct Outside Classroom",
+                    children: [
+                        {
+                            name: "Professional Integrity and Collaboration",
+                            children: [
+                                { name: "Faculty Cooperation", description: "Promoting Teamwork: Facilitating cooperation within the faculty." },
+                                { name: "Educational Policies Contribution", description: "Shaping Policies: Contributing to educational policy determination." },
+                                { name: "Constructive Ideas", description: "Sharing Ideas: Helping associates with constructive ideas." },
+                                { name: "Non-Interference", description: "Respecting Boundaries: Avoiding interference in colleagues' affairs." },
+                                { name: "Confidentiality Maintenance", description: "Protecting Privacy: Keeping information about associates confidential." },
+                                { name: "Proper Channels", description: "Following Procedures: Using proper channels for school business." },
+                                { name: "Avoiding Trivial Conversations", description: "Maintaining Professionalism: Avoiding trivial conversations about colleagues." }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: "Conduct in Classroom",
+                    children: [
+                        {
+                            name: "Cooperative and Supportive Environment",
+                            children: [
+                                { name: "Acceptance of Unique Self", description: "Valuing Individuality: Accepting each child's unique self." },
+                                { name: "Sense of Belonging", description: "Fostering Inclusion: Making every child feel they belong." },
+                                { name: "Trust in Students' Ability", description: "Encouraging Confidence: Trusting and caring for students' abilities." },
+                                { name: "Student Contribution", description: "Promoting Participation: Encouraging students to contribute." },
+                                { name: "Problem Sharing", description: "Supporting Students: Creating an environment for students to share problems." },
+                                { name: "Acceptance Among Students", description: "Fostering Tolerance: Promoting acceptance among students." },
+                                { name: "Responsibility in Classroom", description: "Encouraging Responsibility: Ensuring students take responsibility." },
+                                { name: "Code of Behavior", description: "Maintaining Standards: Helping maintain a code of behavior." },
+                                { name: "Love for Learning", description: "Inspiring Learning: Developing a love for learning in students." }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: "Ethical Standards",
+                    children: [
+                        {
+                            name: "Integrity and Impartiality",
+                            children: [
+                                { name: "Prejudice and Bias Prevention", description: "Ensuring Fairness: Treating every child without prejudice." },
+                                { name: "Trust Respect", description: "Maintaining Trust: Respecting the trust of students." },
+                                { name: "Sectarian Views Avoidance", description: "Promoting Neutrality: Avoiding the promotion of sectarian views." },
+                                { name: "Parents' Views", description: "Considering Opinions: Respecting the views of parents." },
+                                { name: "Participation in Policy Processes", description: "Engaging in Policies: Participating in school policy processes." },
+                                { name: "Supporting School Policies", description: "Adhering to Policies: Supporting determined school policies." },
+                                { name: "Professional Conduct with Associates", description: "Fostering Relationships: Being kind, tolerant, and loyal with colleagues." },
+                                { name: "Pride in Associates' Achievements", description: "Encouraging Success: Taking pride in colleagues' achievements." },
+                                { name: "Discreet Criticism", description: "Constructive Feedback: Providing discreet, constructive criticism." },
+                                { name: "Pride in Work", description: "Promoting Excellence: Taking pride in your work." }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: "Awareness about CBSE’s Policies",
+                    children: [
+                        {
+                            name: "Policies and Procedures",
+                            children: [
+                                { name: "Recent Circulars", description: "Staying Updated: Awareness of recent CBSE circulars." },
+                                { name: "Hubs of Learning", description: "Understanding Hubs: Knowledge about Hubs of Learning." },
+                                { name: "Subject-Change Procedure", description: "Knowing Procedures: Information about the subject-change procedure." },
+                                { name: "Subject Combinations", description: "Awareness: Awareness of subject combinations students cannot opt for." },
+                                { name: "Pedagogical Practices", description: "Implementing Best Practices: Knowledge of the latest pedagogical practices." },
+                                { name: "Annual Pedagogical Plan", description: "Planning Requirements: Understanding the need for an annual pedagogical plan." },
+                                { name: "Guidelines on Experiential Learning", description: "Integrating Guidelines: Awareness of CBSE guidelines on experiential learning." },
+                                { name: "Board Examination Eligibility", description: "Ensuring Eligibility: Knowledge of eligibility criteria for Board exams." },
+                                { name: "Strengthening Assessment Practices", description: "Enhancing Assessments: Awareness of CBSE circular on assessment practices." },
+                                { name: "Mandatory Sports Period", description: "Promoting Physical Activity: Facilitating mandatory sports periods." },
+                                { name: "Academic Inputs Website", description: "Resource Access: Knowing which website to refer to for academic inputs." },
+                                { name: "Examination, Administration, and Affiliation Website", description: "Staying Informed: Knowledge about the CBSE website for examination and affiliation." }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+
+        const colors = {
+            "Foundational Knowledge and Skills": "#ff6347",
+            "Pedagogical Expertise": "#1f77b4",
+            "Understanding Teaching Methodologies": "#2ca02c",
+            "Evaluating Effectiveness": "#ff7f0e",
+            "Learning Theories": "#d62728",
+            "Application in Teaching": "#9467bd",
+            "Instructional Strategies": "#8c564b",
+            "Engagement Techniques": "#e377c2",
+            "Communication Skills": "#7f7f7f",
+            "Subject Matter Knowledge": "#bcbd22",
+            "Classroom Management": "#17becf",
+            "Organizational Communication and Collaboration": "#ff9896",
+            "Reflective Practice and Continuous Professional Development": "#c5b0d5",
+            "Primary Level Teaching Methodologies": "#ffbb78",
+            "Secondary Level Teaching Methodologies": "#98df8a",
+            "Primary Level Learning Theories": "#ff9896",
+            "Secondary Level Learning Theories": "#aec7e8",
+            "Primary Level Instructional Strategies": "#c49c94",
+            "Secondary Level Instructional Strategies": "#f7b6d2",
+            "Primary Level": "#dbdb8d",
+            "Secondary Level": "#9edae5",
+            "Primary Level Mastery": "#c7c7c7",
+            "Secondary Level Mastery": "#c5b0d5",
+            "Primary Level Safety": "#f7b6d2",
+            "Secondary Level Safety": "#c49c94",
+            "Primary Level Rules": "#dbdb8d",
+            "Secondary Level Rules": "#9edae5",
+            "Primary Level Relationships": "#ff9896",
+            "Secondary Level Relationships": "#aec7e8",
+            "Primary Level Interaction": "#c7c7c7",
+            "Secondary Level Interaction": "#c5b0d5",
+        };
+
+        const width = 3000;
+        const height = 3000;
+
+        const svg = d3.select("#competency-map").append("svg")
+            .attr("width", width)
+            .attr("height", height)
+            .append("g")
+            .attr("transform", "translate(40,0)");
+
+        const treeLayout = d3.tree().size([height, width - 160]);
+
+        const root = d3.hierarchy(data);
+        treeLayout(root);
+
+        // Links
+        svg.selectAll(".link")
+            .data(root.links())
+            .enter().append("path")
+            .attr("class", "link")
+            .attr("d", d3.linkHorizontal()
+                .x(d => d.y)
+                .y(d => d.x));
+
+        // Nodes
+        const node = svg.selectAll(".node")
+            .data(root.descendants())
+            .enter().append("g")
+            .attr("class", "node")
+            .attr("transform", d => `translate(${d.y},${d.x})`);
+
+        node.append("circle")
+            .attr("r", 5)
+            .attr("fill", d => colors[d.data.name] || "#000");
+
+        node.append("text")
+            .attr("dy", ".35em")
+            .attr("x", d => d.children ? -10 : 10)
+            .style("text-anchor", d => d.children ? "end" : "start")
+            .text(d => d.data.name);
+
+        // Tooltip
+        const tooltip = d3.select("#tooltip");
+
+        node.on("mouseover", function (event, d) {
+            tooltip.transition()
+                .duration(200)
+                .style("opacity", .9);
+            tooltip.html(`<strong>${d.data.name}</strong><br>${d.data.description || ""}`)
+                .style("left", (event.pageX + 10) + "px")
+                .style("top", (event.pageY - 28) + "px");
+        })
+            .on("mouseout", function () {
+                tooltip.transition()
+                    .duration(500)
+                    .style("opacity", 0);
+            });
+
+        // Add legend
+        const legend = svg.append("g")
+            .attr("class", "legend")
+            .attr("transform", "translate(20,20)");
+
+        const categories = Object.keys(colors);
+
+        legend.selectAll("rect")
+            .data(categories)
+            .enter().append("rect")
+            .attr("x", 0)
+            .attr("y", (d, i) => i * 20)
+            .attr("width", 18)
+            .attr("height", 18)
+            .style("fill", d => colors[d]);
+
+        legend.selectAll("text")
+            .data(categories)
+            .enter().append("text")
+            .attr("x", 24)
+            .attr("y", (d, i) => i * 20 + 9)
+            .attr("dy", ".35em")
+            .text(d => d.charAt(0).toUpperCase() + d.slice(1).replace(/_/g, ' '));
+    </script>
+</body>
+
+</html>
